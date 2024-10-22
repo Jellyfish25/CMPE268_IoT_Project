@@ -4,6 +4,7 @@ import "./Dashboard.css"
 const Dashboard = () => {
     const [temperature, setTemperature] = useState(0.0);
     const [tempInput, setTempInput] = useState(0.0);
+    const [fanStatus, setFanStatus] = useState(false); // note: set fan status will be based on fan reading
 
     // read data and set the temperature to be displayed (so far set to default 50.0)
     useEffect(() => {
@@ -21,6 +22,7 @@ const Dashboard = () => {
         let temp = parseFloat(tempInput)
         if(!isNaN(temp)) {
             temp = Math.max(0, Math.min(temp, 100));
+            temp = Math.round(temp * 100)/100;
             setTemperature(temp);
         }
         else {
@@ -41,10 +43,6 @@ const Dashboard = () => {
                         <div>100</div>
                 </div>
 
-                <div style={{marginTop: "2.5%"}}>
-                        Detected Temperature: {temperature}
-                </div>
-
                 <div className="input-container">
                     <input
                         name="temperature-input"
@@ -55,6 +53,14 @@ const Dashboard = () => {
                         style={{width: "20%", marginRight: "5%"}}
                     />
                     <button onClick={processSubmit}>Set Temperature</button>
+                </div>
+
+                <div style={{marginTop: "2.5%"}}>
+                        Detected Temperature: {temperature}
+                </div>
+
+                <div style={{marginTop: "2.5%"}}>
+                        Fan Status: {fanStatus ? "On" : "Off"}
                 </div>
             </div>
         </div>
