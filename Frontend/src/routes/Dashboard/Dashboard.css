@@ -44,6 +44,6 @@ body {
     margin-top: 1.75%;
     height: 50%;
     border-radius: 10px;
-    background-color: red;
+    background-image: linear-gradient(to right, blue , red);    
     transition: width 0.5s ease-out;
 }

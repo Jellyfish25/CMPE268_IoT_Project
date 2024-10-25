@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from "react";
 import "./Dashboard.css"
+import { host } from "../../../../env";
 
 const Dashboard = () => {
     const [temperature, setTemperature] = useState(0.0);
@@ -8,9 +9,25 @@ const Dashboard = () => {
 
     // read data and set the temperature to be displayed (so far set to default 50.0)
     useEffect(() => {
-        setTemperature(50.0);
-    }, [])
+        const fetchTemperature = async () => {
+            try {
+                fetch(`http://${host}:5000/api/get_temperature`)
+                .then((resp) => resp.json())
+                .then((data) => {
+                    console.log("data:", data);
+                    setTemperature(data.temperature);
+                })
+            } catch (e) {
+                console.error("Error fetching temperature data:", e);
+            }
+        };
+    
+        fetchTemperature();
+        const intervalId = setInterval(fetchTemperature, 10000); // calls fetchTemperature every 10 seconds
+        return () => clearInterval(intervalId);
+    }, []);
 
+    
     useEffect(() => {
         const temperatureBarFill = document.querySelector(".temperature-bar-fill");
         if (temperatureBarFill) {
