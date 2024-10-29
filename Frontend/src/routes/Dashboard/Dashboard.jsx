@@ -1,11 +1,17 @@
 import React, {useState, useEffect} from "react";
 import "./Dashboard.css"
-import { host } from "../../../../env";
+import Clock from "./Clock.jsx"
+import {host} from "../../../../env";
 
 const Dashboard = () => {
     const [temperature, setTemperature] = useState(0.0);
     const [tempInput, setTempInput] = useState(0.0);
     const [fanStatus, setFanStatus] = useState(false); // note: set fan status will be based on fan reading
+    const [startTime, setStartTime] = useState("1:00pm"); //used for turning on the light
+    const [endTime, setEndTime] = useState("1:00pm");
+    var timeOptions = [
+        {value: 1, label: 1}
+    ];
 
     // read data and set the temperature to be displayed (so far set to default 50.0)
     useEffect(() => {
@@ -49,8 +55,8 @@ const Dashboard = () => {
 
     return (
         <div>
-            <h1>Current Temperature</h1>
             <div className="container"> 
+                <h1>Current Temperature</h1>
                 <div className="temperature-bar">
                     <div className="temperature-bar-fill"></div> 
                 </div>
@@ -78,6 +84,30 @@ const Dashboard = () => {
 
                 <div style={{marginTop: "2.5%"}}>
                         Fan Status: {fanStatus ? "On" : "Off"}
+                </div>
+            </div>
+            
+            <div className="container"> 
+                <h1>Light Settings</h1>
+                <Clock/>
+                <div className="horizontal-container">
+                    <input 
+                        name="start-time-input"
+                        type="String"
+                    />
+                    <input 
+                        name="start-time-input"
+                        type="String"
+                    />
+                </div>
+                {/* <select 
+                    name="startTimeInput"
+                    value="0"
+                    options={timeOptions}
+                    onChange={null}
+                /> */}
+                <div style={{marginTop: "2.5%"}}>
+                        Light Status: {fanStatus ? "On" : "Off"}
                 </div>
             </div>
         </div>
