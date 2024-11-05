@@ -13,7 +13,7 @@ const Clock = () => {
 
     return(
         <div>
-            {time.toLocaleTimeString()}
+            Current Time: {time.toLocaleTimeString('it-IT')}
         </div>
     );
 }
