@@ -3,7 +3,7 @@ from threading import Thread
 import time
 import serial
 
-TESTING = False
+TESTING = True
 
 class Hardware:
 
@@ -13,7 +13,7 @@ class Hardware:
             #Initialize serial connection
             self.ser_con = serial.Serial("/dev/cu.usbmodem14301", 9600, timeout=1)
 
-        #Resume previous settings on restart
+        #Resume previous goal on restart
         self.path_root = os.path.dirname(__file__)
         try:
             with open(self.path_root + "/goal_temp.txt", "r") as f:
@@ -27,14 +27,63 @@ class Hardware:
         self.cur_temp = 25
         self.update_temp()
 
-        #Thread variables
+        #Fan spinny stuff
         self.fan_thread = None
         self.enabled = False
 
+        #Start time, separate files because sick and brain not working
+        try:
+            with open(self.path_root + "/start_time.txt", "r") as f:
+                self.start_time = f.read()
+        except IOError:
+            with open(self.path_root + "/start_time.txt", "w") as f:
+                self.start_time = "00:01"
+                f.write(self.start_time)
+
+        #End time, separate files because sick and brain not working
+        try:
+            with open(self.path_root + "/end_time.txt", "r") as f:
+                self.end_time = f.read()
+        except IOError:
+            with open(self.path_root + "/end_time.txt", "w") as f:
+                self.end_time = "00:01"
+                f.write(self.end_time)
+
+        #Timing stuff, starts if between start and stop time
+        self.updated_time = time.strftime("%H:%M", time.localtime())
+        if self.start_time < self.updated_time < self.end_time:
+            self.start()
+
+        self.timing_thread = Thread(target=self.time_keeper, daemon=True)
+        self.timing_thread.start()
+
+    #Checks whether current time is start or stop
+    #Once a minute to quickly get updates without triggering multiple times
+    def time_keeper(self):
+        while(True):
+            if TESTING:
+                print("Current Time: " + time.strftime("%H:%M", time.localtime()) + "\tStart Time: " + self.start_time + "\tEnd Time: " + self.end_time)
+
+            if self.start_time != self.end_time:
+                self.updated_time = time.strftime("%H:%M", time.localtime())
+                if self.updated_time == self.end_time:
+                    self.stop()
+                elif self.updated_time == self.start_time:
+                    self.start()
+            time.sleep(60)
+
+    def set_start(self, start_time):
+        self.start_time = start_time
+        with open(self.path_root + "/start_time.txt", "w") as f:
+            f.write(str(self.start_time))
+
+    def set_end(self, end_time):
+        self.end_time = end_time
+        with open(self.path_root + "/end_time.txt", "w") as f:
+            f.write(str(self.end_time))
+
     def update_temp(self):
-        if TESTING:
-            print("Updated temp")
-        else:
+        if not TESTING:
             if self.ser_con.in_waiting > 0:
                 data = self.ser_con.readline().decode('utf-8').strip()
                 #print(f"retrieved data: {data}")
@@ -47,19 +96,22 @@ class Hardware:
         with open(self.path_root + "/goal_temp.txt", "w") as f:
             f.write(str(self.goal_temp))
 
+    #Four speed settings: 0 off to 3 max
+    def get_cur_speed(self) -> int:
+        t_dif = self.cur_temp - self.goal_temp
+        if t_dif < -1:
+            return 0
+        elif t_dif < 0:
+            return 1
+        elif t_dif < 1:
+            return 2
+        else:
+            return 3
+
     #TODO: Replace with however it actually controls fan
     def spin_fan(self):
-        t_dif = self.cur_temp - self.goal_temp
-
-        if TESTING:
-            if t_dif < -2:
-                print("Fan stopped due to low temp!")
-            elif t_dif < 0:
-                print("Fan spinning slowly")
-            elif t_dif < 2:
-                print("Fan spinning medium")
-            else:
-                print("Fan max power!")
+        speeds = ["Off", "Slow", "Moderate", "Max"]
+        print("Current fan speed: " + speeds[self.get_cur_speed()])
 
     def do_stuff(self):
         while self.enabled:
@@ -72,6 +124,7 @@ class Hardware:
             self.enabled = True
             self.fan_thread = Thread(target=self.do_stuff, daemon=True)
             self.fan_thread.start()
+            print("Fan started!")
 
     def stop(self):
         if self.enabled:
