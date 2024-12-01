@@ -14,7 +14,7 @@ hw = hardware.Hardware()
 def set_goal_temp():
     try:
         hw.set_goal(request.get_json()["goal_temp"])
-        return "", 200
+        return jsonify({"temperature was updated:": hw.goal_temp}), 200
     except Exception as e:
         return jsonify({"message": "Failed to receive data", "Error": str(e)}), 400
     
@@ -57,6 +57,7 @@ def stop():
 @app.route("/api/get_temperature", methods=['GET'])
 def get_temperature():
     if hw.cur_temp:
+        print("temp: ", hw.cur_temp)
         return jsonify({"temperature": hw.cur_temp, "goal": hw.goal_temp}), 200
     else:
         return jsonify({"message": "No data from arduino yet"}), 404
@@ -73,4 +74,4 @@ def get_status():
         return jsonify({"device_status": "Off"}), 200
     
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80)
+    app.run(host="127.0.0.1", port=5000, debug=True)

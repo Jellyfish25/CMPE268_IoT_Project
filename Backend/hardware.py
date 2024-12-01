@@ -3,7 +3,7 @@ from threading import Thread
 import time
 import serial
 
-TESTING = True
+TESTING = False
 
 class Hardware:
 
@@ -11,7 +11,7 @@ class Hardware:
 
         if not TESTING:
             #Initialize serial connection
-            self.ser_con = serial.Serial("/dev/cu.usbmodem14301", 9600, timeout=1)
+            self.ser_con = serial.Serial("/dev/cu.usbmodem14101", 9600, timeout=1)
 
         #Resume previous goal on restart
         self.path_root = os.path.dirname(__file__)
@@ -26,6 +26,8 @@ class Hardware:
         #Default to 25 temp, then try to update to real
         self.cur_temp = 25
         self.update_temp()
+        #while True:
+        #    self.cur_temp = self.ser_con.readline().decode('utf-8').rstrip()
 
         #Fan spinny stuff
         self.fan_thread = None
@@ -86,11 +88,31 @@ class Hardware:
         if not TESTING:
             if self.ser_con.in_waiting > 0:
                 data = self.ser_con.readline().decode('utf-8').strip()
-                #print(f"retrieved data: {data}")
-                if "Temperature:" in data:
-                    self.cur_temp = data.split(":")[1].strip()
-                    #print(f"Received temperature:{self.cur_temp}")
+                print(f"Retrieved raw data: {data}")  # Debugging: show raw data
 
+                if "Temperature:" in data:
+                    try:
+                        # Extract and update temperature from the data
+                        self.cur_temp = float(data.split(":")[1].strip())
+                        print(f"Updated temperature: {self.cur_temp}")  # Debugging: confirm temperature update
+                    except ValueError:
+                        print(f"Error parsing temperature from data: {data}")  # Handle unexpected data formats
+                else:
+                    print(f"Data does not contain temperature information: {data}")  # Data format mismatch
+            else:
+                print("No data available in serial buffer")
+
+
+    # def update_temp(self):
+    #     if not TESTING:
+    #         if self.ser_con.in_waiting > 0:
+    #             data = self.ser_con.readline().decode('utf-8').strip()
+    #             print(f"retrieved data: {data}")
+    #             if "Temperature:" in data:
+    #                 self.cur_temp = data.split(":")[1].strip()
+    #                 #print(f"Received temperature:{self.cur_
+
+                    
     def set_goal(self, goal):
         self.goal_temp = float(goal)
         with open(self.path_root + "/goal_temp.txt", "w") as f:
