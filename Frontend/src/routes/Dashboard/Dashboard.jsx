@@ -11,15 +11,16 @@ const Dashboard = () => {
     const [lightStatus, setLightStatus] = useState(false);
     const [startTime, setStartTime] = useState("01:00"); //used for turning on the light
     const [endTime, setEndTime] = useState("01:00");
+    const [goalTemp, setGoalTemp] = useState(80.6);
 
     // read data and set the temperature to be displayed (so far set to default 50.0)
     useEffect(() => {
         const fetchTemperature = async () => {
             try {
-                fetch(`http://${host}:5000/api/get_temperature`)
+                fetch(`http://${host}:80/api/get_temperature`)
                 .then((resp) => resp.json())
                 .then((data) => {
-                    console.log("data:", data);
+                    //console.log("data:", data);
                     setTemperature(data.temperature);
                 })
             } catch (e) {
@@ -28,7 +29,7 @@ const Dashboard = () => {
         };
     
         fetchTemperature();
-        const intervalId = setInterval(fetchTemperature, 10000); // calls fetchTemperature every 10 seconds
+        const intervalId = setInterval(fetchTemperature, 1000); // calls fetchTemperature every 10 seconds
         return () => clearInterval(intervalId);
     }, []);
 
@@ -69,20 +70,68 @@ const Dashboard = () => {
         else {
             setLightStatus(false);
         }
+
+        try {
+            // Send POST request with goal_temp in the body
+            fetch(`http://${host}:80/api/light`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ light_status: lightStatus}),  // Sending goal_temp as JSON
+            })
+            .then((resp) => {
+                if (!resp.ok) {
+                    throw new Error(`HTTP error! status: ${resp.status}`);
+                }
+                return resp.json();  // Get response in JSON format
+            })
+            .catch((e) => {
+                console.error("Error updating light:", e);
+            });
+        } catch (e) {
+            console.error("Unexpected error:", e);
+        }
     })
 
     const processSubmit = () => {
-        let temp = parseFloat(tempInput)
-        if(!isNaN(temp)) {
+        let temp = parseFloat(tempInput);  // Convert input to a float
+        if (!isNaN(temp)) {
+            // Limit the temperature range between 0 and 100, and round to two decimal places
             temp = Math.max(0, Math.min(temp, 100));
-            temp = Math.round(temp * 100)/100;
-            setTemperature(temp);
-        }
-        else {
+            temp = Math.round(temp * 100) / 100;
+    
+            console.log("Temperature set:", temp);
+            setFanStatus(temp <= temperature ? true : false);
+            try {
+                console.log("Using host:", host);  // Log the host for debugging
+    
+                // Send POST request with goal_temp in the body
+                fetch(`http://${host}:80/api/goal`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ goal_temp: temp }),  // Sending goal_temp as JSON
+                })
+                .then((resp) => {
+                    if (!resp.ok) {
+                        throw new Error(`HTTP error! status: ${resp.status}`);
+                    }
+                    return resp.json();  // Get response in JSON format
+                })
+                .then(setGoalTemp(temp))
+                .catch((e) => {
+                    console.error("Error setting temperature:", e);
+                });
+            } catch (e) {
+                console.error("Unexpected error:", e);
+            }
+        } else {
             alert("Please enter a valid temperature value");
         }
-    }
-
+    };
+    
     return (
         <div>
             <div className="container"> 
@@ -111,7 +160,9 @@ const Dashboard = () => {
                 <div style={{marginTop: "2.5%"}}>
                         Detected Temperature: {temperature}
                 </div>
-
+                <div style={{marginTop: "2.5%"}}>
+                        Goal Temperature: {goalTemp}
+                </div>
                 <div style={{marginTop: "2.5%"}}>
                         Fan Status: {fanStatus ? "On" : "Off"}
                 </div>
