@@ -11,7 +11,7 @@ class Hardware:
 
         if not TESTING:
             #Initialize serial connection
-            self.ser_con = serial.Serial("/dev/cu.usbmodem14101", 9600, timeout=1)
+            self.ser_con = serial.Serial("/dev/cu.SLAB_USBtoUART", 115200, timeout=1)
 
         #Resume previous goal on restart
         self.path_root = os.path.dirname(__file__)
